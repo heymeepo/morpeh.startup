@@ -1,0 +1,10 @@
+{
+    "name": "com.scellecs.morpeh.startup",
+    "author": "Heymeepo",
+    "displayName": "Morpeh Startup",
+    "description": "Morpeh ECS simple startup with DI integration",
+    "unity": "2020.3",
+    "version": "1.0.0",
+    "keywords": ["morpeh", "ecs", "utility", "extensions"],
+    "dependencies": {}
+}
