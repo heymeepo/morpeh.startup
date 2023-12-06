@@ -14,7 +14,6 @@ https://github.com/heymeepo/morpeh.startup.git
 
 *Attention: All your update systems should be inherited from the IUpdateSystem interface instead of ISystem.*
 
-All added systems after ```AddSystemsGroup()``` are placed in one systems group. If you need to add systems to different systems groups, you should call ```startup.AddSystemsGroup()``` again, as in the example below.
 ```csharp
 public class Game : MonoBehaviour
 {
@@ -44,6 +43,7 @@ public class Game : MonoBehaviour
 }
 ```
 
+All added systems after ```AddSystemsGroup()``` are placed in one systems group. If you need to add systems to different systems groups, you should call ```startup.AddSystemsGroup()``` again, as in the example above.
 You can manually update the startup by passing 'updateByUnity: false' and calling the methods ```startup.Update()```, ```startup.FixedUpdate()```, and ```startup.LateUpdate()``` as needed.
 
 ## Features
@@ -112,7 +112,7 @@ public class EcsModule : IStartable, IDisposable
         startup
             .AddSystemsGroup()
             .AddFeatureInjected<AnimationFeature>()
-            .AddFeature(new RenderFeature());
+            .AddFeatureInjected<RenderFeature>();
 
         startup
             .AddSystemsGroup()
