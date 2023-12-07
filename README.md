@@ -44,10 +44,11 @@ public class Game : MonoBehaviour
 ```
 
 All added systems after ```AddSystemsGroup()``` are placed in one systems group. If you need to add systems to different systems groups, you should call ```startup.AddSystemsGroup()``` again, as in the example above.
+
 You can manually update the startup by passing 'updateByUnity: false' and calling the methods ```startup.Update()```, ```startup.FixedUpdate()```, and ```startup.LateUpdate()``` as needed.
 
 ## Features
-A feature is a wrapper around a set of systems responsible for some specific functionality. To create a feature, declare a new class and inherit it from the IEcsFeature interface. Inside the feature, all functionality for adding systems is available, except for ```AddSystemsGroup``` and ```AddFeature```
+A feature is a wrapper around a set of systems responsible for some specific functionality. To create a feature, declare a new class and inherit it from the ```IEcsFeature``` interface. Inside the feature, all functionality for adding systems is available, except for ```AddSystemsGroup``` and ```AddFeature```
 
 ```csharp
 public class Game : MonoBehaviour
@@ -85,7 +86,8 @@ public sealed class AnimationFeature : IEcsFeature
 Ensure that you have imported the [VContainer](https://github.com/hadashiA/VContainer) package and define ```VCONTAINER``` in 
 *Project Settings -> Player -> Scripting Define Symbols*
 
-Now, to create an EcsStartup, you need to pass the current ```LifetimeScope``` to its constructor.
+Now, to create an EcsStartup, you need to pass the current ```LifetimeScope``` to its constructor. Specify all the necessary dependencies in the constructors of your systems or features.
+
 You can use the methods with the 'Injected' postfix to add your systems using the container. However, you still have the option to add systems manually.
 
 ```csharp
@@ -156,6 +158,8 @@ public sealed class AnimationFeature : IEcsFeature
     }
 }
 ```
+
+*Clarification: You don't need to register your systems or features in the LifetimeScope, the startup does it automatically.*
 
 ## License
 
