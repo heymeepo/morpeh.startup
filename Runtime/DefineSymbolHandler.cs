@@ -4,7 +4,7 @@ using UnityEditor;
 namespace Scellecs.Morpeh.Elysium
 {
     [InitializeOnLoad]
-    public class DefineSymbolHandler
+    internal sealed class DefineSymbolHandler
     {
         private const string SYMBOL = "MORPEH_ELYSIUM";
 
