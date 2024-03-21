@@ -1,21 +1,26 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Runtime.CompilerServices;
-using UnityEngine;
-#if VCONTAINER
+﻿#if ENABLE_MONO || ENABLE_IL2CPP
+#define MORPEH_UNITY
+#endif
+
+#if VCONTAINER && MORPEH_UNITY
 using VContainer;
 using VContainer.Unity;
 #endif
+
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using static Scellecs.Morpeh.Elysium.EcsStartup;
 
 namespace Scellecs.Morpeh.Elysium
 {
     public sealed class EcsStartup : IDisposable
     {
-        private int currentOrder;
+        public World World { get; private set; }
 
+        private int currentOrder;
         private readonly Dictionary<int, SystemsGroup> systemsGroups;
-#if VCONTAINER
+#if VCONTAINER && MORPEH_UNITY
         private readonly LifetimeScope scope;
 
         private LifetimeScope featuresScope;
@@ -27,30 +32,28 @@ namespace Scellecs.Morpeh.Elysium
         private Action buildSetupInOrder;
         private Action setupSystemsGroups;
 
-        private World world;
-
         private bool initialized;
         private bool disposed;
 
-#if VCONTAINER
-        public EcsStartup(LifetimeScope scope)
+#if VCONTAINER && MORPEH_UNITY
+        public EcsStartup(LifetimeScope scope, World world = null)
         {
             this.scope = scope;
             currentOrder = 0;
             systemsGroups = new Dictionary<int, SystemsGroup>();
-            world = World.Default;
+            World = world.IsNullOrDisposed() ? World.Default : world;
             initialized = false;
             disposed = false;
         }
 #else
-		public EcsStartup() 
-		{ 
+        public EcsStartup(World world = null)
+        {
             currentOrder = 0;
-			systemsGroups = new Dictionary<int, SystemsGroup>();
-			world = World.Default;
-			initialized = false;
-			disposed = false;
-		}
+            systemsGroups = new Dictionary<int, SystemsGroup>();
+            World = world.IsNullOrDisposed() ? World.Default : world;
+            initialized = false;
+            disposed = false;
+        }
 #endif
         public void Initialize(bool updateByUnity)
         {
@@ -58,18 +61,22 @@ namespace Scellecs.Morpeh.Elysium
             {
                 if (disposed)
                 {
-                    Debug.LogError("The EcsStartup has already been disposed. Create a new one to use it.");
+                    LogWarning("The EcsStartup has already been disposed. Create a new one to use it.");
                 }
                 else
                 {
-                    Debug.LogWarning($"EcsStartup with {world.GetFriendlyName()} has already been initialized.");
+                    LogWarning($"EcsStartup with {World.GetFriendlyName()} has already been initialized.");
                 }
 
                 return;
             }
 
-            world ??= World.Create();
-            world.UpdateByUnity = updateByUnity;
+            if (World.IsNullOrDisposed())
+            {
+                World = World.Create();
+            }
+
+            World.UpdateByUnity = updateByUnity;
 
             RegisterFeatures();
             BuildSystemsSetupOrder();
@@ -84,28 +91,28 @@ namespace Scellecs.Morpeh.Elysium
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(float deltaTime)
         {
-            if (world.UpdateByUnity == false)
+            if (World.UpdateByUnity == false)
             {
-                world.Update(deltaTime);
+                World.Update(deltaTime);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void FixedUpdate(float fixedDeltaTime)
         {
-            if (world.UpdateByUnity == false)
+            if (World.UpdateByUnity == false)
             {
-                world.FixedUpdate(fixedDeltaTime);
+                World.FixedUpdate(fixedDeltaTime);
             }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void LateUpdate(float deltaTime)
         {
-            if (world.UpdateByUnity == false)
+            if (World.UpdateByUnity == false)
             {
-                world.LateUpdate(deltaTime);
-                world.CleanupUpdate(deltaTime);
+                World.LateUpdate(deltaTime);
+                World.CleanupUpdate(deltaTime);
             }
         }
 
@@ -114,16 +121,25 @@ namespace Scellecs.Morpeh.Elysium
             if (initialized && disposed == false)
             {
                 systemsGroups.Clear();
-                world.Dispose();
-#if VCONTAINER
+                World.Dispose();
+#if VCONTAINER && MORPEH_UNITY
                 featuresScope.Dispose();
                 systemsScope.Dispose();
 #endif
-                world = null;
+                World = null;
                 disposed = true;
             }
         }
-#if VCONTAINER
+
+        private static void LogWarning(string message)
+        {
+#if MORPEH_UNITY
+            UnityEngine.Debug.LogWarning(message);
+#else
+            Console.WriteLine(message);
+#endif
+        }
+#if VCONTAINER && MORPEH_UNITY
         private void AddSystemInjectedDefferedSetup<T>(int order) where T : class, ISystem
         {
             buildSetupInOrder += () => AddSystemInjected<T>(order);
@@ -209,16 +225,16 @@ namespace Scellecs.Morpeh.Elysium
         {
             if (systemsGroups.TryGetValue(order, out SystemsGroup systemsGroup) == false)
             {
-                systemsGroup = systemsGroups[order] = world.CreateSystemsGroup();
+                systemsGroup = systemsGroups[order] = World.CreateSystemsGroup();
             }
 
             return systemsGroup;
         }
 
-        [System.Diagnostics.Conditional("VCONTAINER")]
+        [System.Diagnostics.Conditional("VCONTAINER"), System.Diagnostics.Conditional("MORPEH_UNITY")]
         private void RegisterFeatures()
         {
-#if VCONTAINER
+#if VCONTAINER && MORPEH_UNITY
             featuresScope = scope.CreateChild(builder => registerFeatures?.Invoke(builder));
 #endif
         }
@@ -228,10 +244,10 @@ namespace Scellecs.Morpeh.Elysium
             buildSetupInOrder?.Invoke();
         }
 
-        [System.Diagnostics.Conditional("VCONTAINER")]
+        [System.Diagnostics.Conditional("VCONTAINER"), System.Diagnostics.Conditional("MORPEH_UNITY")]
         private void RegisterSystems()
         {
-#if VCONTAINER
+#if VCONTAINER && MORPEH_UNITY
             systemsScope = scope.CreateChild(builder => registerSystems?.Invoke(builder));
 #endif
         }
@@ -242,13 +258,13 @@ namespace Scellecs.Morpeh.Elysium
 
             foreach (var group in systemsGroups)
             {
-                world.AddSystemsGroup(group.Key, group.Value);
+                World.AddSystemsGroup(group.Key, group.Value);
             }
         }
 
         private void CleanupActions()
         {
-#if VCONTAINER
+#if VCONTAINER && MORPEH_UNITY
             registerSystems = null;
             registerFeatures = null;
 #endif
@@ -266,7 +282,7 @@ namespace Scellecs.Morpeh.Elysium
                 this.ecsStartup = ecsStartup;
                 this.order = order;
             }
-#if VCONTAINER
+#if VCONTAINER && MORPEH_UNITY
             public StartupBuilder AddInitializerInjected<T>() where T : class, IInitializer
             {
                 ecsStartup.AddInitializerInjectedDefferedSetup<T>(order);
@@ -350,7 +366,7 @@ namespace Scellecs.Morpeh.Elysium
                 this.ecsStartup = ecsStartup;
                 this.order = order;
             }
-#if VCONTAINER
+#if VCONTAINER && MORPEH_UNITY
             public FeatureBuilder AddInitializerInjected<T>() where T : class, IInitializer
             {
                 ecsStartup.AddInitializerInjected<T>(order);
