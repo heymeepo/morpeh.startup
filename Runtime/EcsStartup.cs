@@ -22,7 +22,7 @@ namespace Scellecs.Morpeh.Elysium
     {
         public World World { get; private set; }
 
-#if VCONTAINER && MORPEH_UNITY
+#if VCONTAINER
         private LifetimeScope scope;
         private LifetimeScope featuresScope;
         private LifetimeScope systemsScope;
