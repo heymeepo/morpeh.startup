@@ -2,7 +2,11 @@
 #define MORPEH_UNITY
 #endif
 
-#if VCONTAINER && MORPEH_UNITY
+#if VCONTAINER && !MORPEH_UNITY
+#undef VCONTAINER
+#endif
+
+#if VCONTAINER
 using VContainer;
 using VContainer.Unity;
 #endif
@@ -18,11 +22,8 @@ namespace Scellecs.Morpeh.Elysium
     {
         public World World { get; private set; }
 
-        private int currentOrder;
-        private readonly Dictionary<int, SystemsGroup> systemsGroups;
 #if VCONTAINER && MORPEH_UNITY
-        private readonly LifetimeScope scope;
-
+        private LifetimeScope scope;
         private LifetimeScope featuresScope;
         private LifetimeScope systemsScope;
 
@@ -32,10 +33,13 @@ namespace Scellecs.Morpeh.Elysium
         private Action buildSetupInOrder;
         private Action setupSystemsGroups;
 
+        private int currentOrder;
+        private Dictionary<int, SystemsGroup> systemsGroups;
+
         private bool initialized;
         private bool disposed;
 
-#if VCONTAINER && MORPEH_UNITY
+#if VCONTAINER
         public EcsStartup(LifetimeScope scope, World world = null)
         {
             this.scope = scope;
@@ -122,7 +126,7 @@ namespace Scellecs.Morpeh.Elysium
             {
                 systemsGroups.Clear();
                 World.Dispose();
-#if VCONTAINER && MORPEH_UNITY
+#if VCONTAINER
                 featuresScope.Dispose();
                 systemsScope.Dispose();
 #endif
@@ -139,7 +143,7 @@ namespace Scellecs.Morpeh.Elysium
             Console.WriteLine(message);
 #endif
         }
-#if VCONTAINER && MORPEH_UNITY
+#if VCONTAINER
         private void AddSystemInjectedDefferedSetup<T>(int order) where T : class, ISystem
         {
             buildSetupInOrder += () => AddSystemInjected<T>(order);
@@ -231,10 +235,10 @@ namespace Scellecs.Morpeh.Elysium
             return systemsGroup;
         }
 
-        [System.Diagnostics.Conditional("VCONTAINER"), System.Diagnostics.Conditional("MORPEH_UNITY")]
+        [System.Diagnostics.Conditional("VCONTAINER")]
         private void RegisterFeatures()
         {
-#if VCONTAINER && MORPEH_UNITY
+#if VCONTAINER
             featuresScope = scope.CreateChild(builder => registerFeatures?.Invoke(builder));
 #endif
         }
@@ -244,10 +248,10 @@ namespace Scellecs.Morpeh.Elysium
             buildSetupInOrder?.Invoke();
         }
 
-        [System.Diagnostics.Conditional("VCONTAINER"), System.Diagnostics.Conditional("MORPEH_UNITY")]
+        [System.Diagnostics.Conditional("VCONTAINER")]
         private void RegisterSystems()
         {
-#if VCONTAINER && MORPEH_UNITY
+#if VCONTAINER
             systemsScope = scope.CreateChild(builder => registerSystems?.Invoke(builder));
 #endif
         }
@@ -264,7 +268,7 @@ namespace Scellecs.Morpeh.Elysium
 
         private void CleanupActions()
         {
-#if VCONTAINER && MORPEH_UNITY
+#if VCONTAINER
             registerSystems = null;
             registerFeatures = null;
 #endif
@@ -282,7 +286,7 @@ namespace Scellecs.Morpeh.Elysium
                 this.ecsStartup = ecsStartup;
                 this.order = order;
             }
-#if VCONTAINER && MORPEH_UNITY
+#if VCONTAINER
             public StartupBuilder AddInitializerInjected<T>() where T : class, IInitializer
             {
                 ecsStartup.AddInitializerInjectedDefferedSetup<T>(order);
@@ -366,7 +370,7 @@ namespace Scellecs.Morpeh.Elysium
                 this.ecsStartup = ecsStartup;
                 this.order = order;
             }
-#if VCONTAINER && MORPEH_UNITY
+#if VCONTAINER
             public FeatureBuilder AddInitializerInjected<T>() where T : class, IInitializer
             {
                 ecsStartup.AddInitializerInjected<T>(order);
