@@ -47,6 +47,8 @@ All added systems after ```AddSystemsGroup()``` are placed in one systems group.
 
 You can manually update the startup by passing 'updateByUnity: false' and calling the methods ```startup.Update()```, ```startup.FixedUpdate()```, and ```startup.LateUpdate()``` as needed.
 
+You can also pass an instance of the ```World``` into the constructor, otherwise, ```World.Default``` will be used.
+
 ## Features
 A feature is a wrapper around a set of systems responsible for some specific functionality. To create a feature, declare a new class and inherit it from the ```IEcsFeature``` interface. Inside the feature, all functionality for adding systems is available, except for ```AddSystemsGroup``` and ```AddFeature```
 
