@@ -21,7 +21,6 @@ namespace Scellecs.Morpeh.Elysium
     public sealed class EcsStartup : IDisposable
     {
         public World World { get; private set; }
-
 #if VCONTAINER
         private LifetimeScope scope;
         private LifetimeScope featuresScope;
@@ -69,7 +68,7 @@ namespace Scellecs.Morpeh.Elysium
                 }
                 else
                 {
-                    LogWarning($"EcsStartup with {World.GetFriendlyName()} has already been initialized.");
+                    LogWarning("EcsStartup has already been initialized.");
                 }
 
                 return;
