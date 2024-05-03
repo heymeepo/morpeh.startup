@@ -1,6 +1,6 @@
 # Morpeh Startup
 
-[Morpeh ECS](https://github.com/scellecs/morpeh) simple startup with DI integration
+Simple startup with DI integration for [Morpeh ECS](https://github.com/scellecs/morpeh) 
 
 ## Installation
 
@@ -88,7 +88,7 @@ public sealed class AnimationFeature : IEcsFeature
 Ensure that you have imported the [VContainer](https://github.com/hadashiA/VContainer) package and define ```VCONTAINER``` in 
 *Project Settings -> Player -> Scripting Define Symbols*
 
-Now, to create an EcsStartup, you need to pass the current ```LifetimeScope``` to its constructor. Specify all the necessary dependencies in the constructors of your systems or features.
+Now, to create an EcsStartup, you need to pass ```VContainerResolver``` with the current ```LifetimeScope``` to its constructor. Specify all the necessary dependencies in the constructors of your systems and features.
 
 You can use the methods with the 'Injected' postfix to add your systems using the container. However, you still have the option to add systems manually.
 
@@ -106,7 +106,7 @@ public class EcsModule : IStartable, IDisposable
 
     public void Start()
     {
-        startup = new EcsStartup(scope);
+        startup = new EcsStartup(new VContainerResolver(scope));
 
         startup
             .AddSystemsGroup()
@@ -162,6 +162,25 @@ public sealed class AnimationFeature : IEcsFeature
 ```
 
 *Clarification: You don't need to register your systems or features in the LifetimeScope, the startup does it automatically.*
+
+## Custom DI container (Advanced)
+
+To add support for another DI solution:
+
+- Define the ```STARTUP_DI``` directive.
+- Create a class that implements ```IStartupContainer```.
+- Implement all necessary methods similar to how it's done in the ```VContainerResolver``` class.
+- Pass an instance of this class to the constructor of EcsStartup.
+
+Here's a brief explanation:
+
+Since we support injection both into features and systems, we need to use two different containers.
+
+Why is that?
+
+The issue arises because, besides directly added systems and features, we also have a ```Configure``` method inside features. These methods additionally want to register their systems in the container. Hence, we cannot build the systems' container until all systems are registered. However, to invoke the ```Configure``` method of features, we need to resolve them. Therefore, features cannot reside in the same container as systems.
+
+Due to this, we first build the container with features. Afterward, we call the Configure methods. Only then can we build the container with systems and create systems groups.
 
 ## License
 
