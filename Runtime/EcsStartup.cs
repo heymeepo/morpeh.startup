@@ -2,6 +2,10 @@
 #define MORPEH_UNITY
 #endif
 
+#if VCONTAINER || STARTUP_DI
+#define DI_ENABLED
+#endif
+
 using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
@@ -12,12 +16,13 @@ namespace Scellecs.Morpeh.Elysium
     {
         public World World { get; private set; }
 
-        private StartupResolver resolver;
+        private int currentSystemGroupOrder;
         private Dictionary<int, SystemsGroup> systemsGroups;
-        private int currentOrder;
 
         private Queue<ResolveInfo> defferedCommands;
         private Queue<ResolveInfo> directCommands;
+
+        private StartupResolver resolver;
 
         private bool initialized;
         private bool disposed;
@@ -25,14 +30,16 @@ namespace Scellecs.Morpeh.Elysium
         public EcsStartup(IStartupContainer container = null, World world = null)
         {
             World = world.IsNullOrDisposed() ? World.Default : world;
-            resolver = new StartupResolver(container);
+            currentSystemGroupOrder = 0;
             systemsGroups = new Dictionary<int, SystemsGroup>();
-            currentOrder = 0;
             defferedCommands = new Queue<ResolveInfo>(64);
             directCommands = new Queue<ResolveInfo>(64);
+            resolver = new StartupResolver(container);
             initialized = false;
             disposed = false;
         }
+
+        public StartupBuilder AddSystemsGroup() => new StartupBuilder(this, currentSystemGroupOrder++);
 
         public void Initialize(bool updateByUnity)
         {
@@ -64,8 +71,6 @@ namespace Scellecs.Morpeh.Elysium
             resolver.Cleanup();
             initialized = true;
         }
-
-        public StartupBuilder AddSystemsGroup() => new StartupBuilder(this, currentOrder++);
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(float deltaTime)
@@ -107,18 +112,9 @@ namespace Scellecs.Morpeh.Elysium
             }
         }
 
-        private static void LogWarning(string message)
-        {
-#if MORPEH_UNITY
-            UnityEngine.Debug.LogWarning(message);
-#else
-            Console.WriteLine(message);
-#endif
-        }
-#if VCONTAINER || STARTUP_DI
         private void AddRegistrationInjected(RegistrationDefinition definition, int order, bool deffered, Type type)
         {
-            var command = new ResolveInfo()
+            var info = new ResolveInfo()
             {
                 definition = definition,
                 injected = true,
@@ -126,15 +122,15 @@ namespace Scellecs.Morpeh.Elysium
                 order = order
             };
 
-            AddCommand(ref command, deffered);
+            AddCommand(ref info, deffered);
             resolver.Register(type, definition, true, null);
         }
-#endif
+
         private void AddRegistration(RegistrationDefinition definition, int order, bool deffered, object instance)
         {
             var type = instance.GetType();
 
-            var command = new ResolveInfo()
+            var info = new ResolveInfo()
             {
                 definition = definition,
                 injected = false,
@@ -142,7 +138,7 @@ namespace Scellecs.Morpeh.Elysium
                 order = order
             };
 
-            AddCommand(ref command, deffered);
+            AddCommand(ref info, deffered);
             resolver.Register(type, definition, false, instance);
         }
 
@@ -156,16 +152,6 @@ namespace Scellecs.Morpeh.Elysium
             {
                 directCommands.Enqueue(command);
             }
-        }
-
-        private SystemsGroup GetOrCreateSystemsGroup(int order)
-        {
-            if (systemsGroups.TryGetValue(order, out SystemsGroup systemsGroup) == false)
-            {
-                systemsGroup = systemsGroups[order] = World.CreateSystemsGroup();
-            }
-
-            return systemsGroup;
         }
 
         private void SetupCommands()
@@ -210,6 +196,25 @@ namespace Scellecs.Morpeh.Elysium
             }
         }
 
+        private SystemsGroup GetOrCreateSystemsGroup(int order)
+        {
+            if (systemsGroups.TryGetValue(order, out SystemsGroup systemsGroup) == false)
+            {
+                systemsGroup = systemsGroups[order] = World.CreateSystemsGroup();
+            }
+
+            return systemsGroup;
+        }
+
+        private static void LogWarning(string message)
+        {
+#if MORPEH_UNITY
+            UnityEngine.Debug.LogWarning(message);
+#else
+            Console.WriteLine(message);
+#endif
+        }
+
         public readonly struct StartupBuilder
         {
             private readonly EcsStartup ecsStartup;
@@ -220,7 +225,7 @@ namespace Scellecs.Morpeh.Elysium
                 this.ecsStartup = ecsStartup;
                 this.order = order;
             }
-#if VCONTAINER || STARTUP_DI
+#if DI_ENABLED
             public StartupBuilder AddInitializerInjected<T>() where T : class, IInitializer
             {
                 ecsStartup.AddRegistrationInjected(RegistrationDefinition.Initializer, order, true, typeof(T));
@@ -304,7 +309,7 @@ namespace Scellecs.Morpeh.Elysium
                 this.ecsStartup = ecsStartup;
                 this.order = order;
             }
-#if VCONTAINER || STARTUP_DI
+#if DI_ENABLED
             public FeatureBuilder AddInitializerInjected<T>() where T : class, IInitializer
             {
                 ecsStartup.AddRegistrationInjected(RegistrationDefinition.Initializer, order, false, typeof(T));
