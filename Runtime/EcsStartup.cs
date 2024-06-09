@@ -104,8 +104,13 @@ namespace Scellecs.Morpeh.Elysium
         {
             if (initialized && disposed == false)
             {
+                for (var i = 0; i < systemsGroups.Count; i++)
+                {
+                    var systemsGroup = systemsGroups[i];
+                    World.RemoveSystemsGroup(systemsGroup);
+                }
+
                 systemsGroups.Clear();
-                World.Dispose();
                 resolver.Dispose();
                 World = null;
                 disposed = true;
