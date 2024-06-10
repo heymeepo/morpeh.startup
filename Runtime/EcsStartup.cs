@@ -75,7 +75,7 @@ namespace Scellecs.Morpeh.Elysium
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Update(float deltaTime)
         {
-            if (World.UpdateByUnity == false)
+            if (World.IsNullOrDisposed() == false && World.UpdateByUnity == false)
             {
                 World.Update(deltaTime);
             }
@@ -84,7 +84,7 @@ namespace Scellecs.Morpeh.Elysium
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void FixedUpdate(float fixedDeltaTime)
         {
-            if (World.UpdateByUnity == false)
+            if (World.IsNullOrDisposed() == false && World.UpdateByUnity == false)
             {
                 World.FixedUpdate(fixedDeltaTime);
             }
@@ -93,11 +93,27 @@ namespace Scellecs.Morpeh.Elysium
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void LateUpdate(float deltaTime)
         {
-            if (World.UpdateByUnity == false)
+            if (World.IsNullOrDisposed() == false && World.UpdateByUnity == false)
             {
                 World.LateUpdate(deltaTime);
                 World.CleanupUpdate(deltaTime);
             }
+        }
+
+        public World DisconnectWorld(bool removeSystemsGroups = true)
+        {
+            var world = World;
+            World = null;
+
+            if (removeSystemsGroups)
+            {
+                foreach (var sysGroup in systemsGroups.Values)
+                {
+                    world.RemoveSystemsGroup(sysGroup);
+                }
+            }
+
+            return world;
         }
 
         public void Dispose()
@@ -105,8 +121,13 @@ namespace Scellecs.Morpeh.Elysium
             if (initialized && disposed == false)
             {
                 systemsGroups.Clear();
-                World.Dispose();
                 resolver.Dispose();
+
+                if (World.IsNullOrDisposed() == false)
+                {
+                    World.Dispose();
+                }
+
                 World = null;
                 disposed = true;
             }
