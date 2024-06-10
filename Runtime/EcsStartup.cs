@@ -105,7 +105,7 @@ namespace Scellecs.Morpeh.Elysium
             var world = World;
             World = null;
 
-            if (World.IsNullOrDisposed() == false && removeSystemsGroups)
+            if (world.IsNullOrDisposed() == false && removeSystemsGroups)
             {
                 foreach (var sysGroup in systemsGroups.Values)
                 {
